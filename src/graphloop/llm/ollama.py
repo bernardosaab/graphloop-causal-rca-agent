@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -19,13 +20,18 @@ class LLMUnavailableError(RuntimeError):
 @dataclass
 class OllamaClient:
     model: str = "qwen2.5:7b-instruct"
-    base_url: str = "http://localhost:11434"
+    # Same variable the Ollama CLI uses, so containers can point at an `ollama` service.
+    base_url: str = field(
+        default_factory=lambda: os.environ.get("OLLAMA_HOST", "http://localhost:11434")
+    )
     timeout_s: float = 120.0
     max_retries: int = 1
     transport: httpx.BaseTransport | None = None  # injectable for tests
     _http: httpx.Client = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
+        if "://" not in self.base_url:  # Ollama accepts "host:port" without a scheme
+            self.base_url = f"http://{self.base_url}"
         self._http = httpx.Client(
             base_url=self.base_url, timeout=self.timeout_s, transport=self.transport
         )

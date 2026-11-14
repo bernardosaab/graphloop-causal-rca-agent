@@ -12,8 +12,8 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.3
         with:
           python-version: "3.12"
           enable-cache: true
@@ -30,7 +30,22 @@ jobs:
       - name: Benchmark (simulated model, deterministic)
         run: uv run graphloop bench --scenarios 60 --seed 7 --out ci-results
       - name: Upload benchmark report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: benchmark-report
           path: ci-results/
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Test suite inside the image
+        run: docker build --target test -t graphloop:test .
+      - name: Build runtime image
+        run: docker build -t graphloop:ci .
+      - name: Smoke test (non-root runtime)
+        run: |
+          docker run --rm graphloop:ci run --incident 3 --agent graph+memory
+          mkdir -p out && chmod 777 out
+          docker run --rm -v "$PWD/out:/app/out" graphloop:ci bench --scenarios 6 --out out
+          test -f out/report.html

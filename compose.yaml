@@ -1,0 +1,28 @@
+# Benchmark with the deterministic simulated model (no other services needed):
+#   docker compose run --rm graphloop bench --out results
+#
+# Benchmark against a real open-weight model served by Ollama:
+#   docker compose --profile ollama up -d ollama
+#   docker compose exec ollama ollama pull qwen2.5:7b-instruct
+#   docker compose run --rm graphloop bench --llm ollama:qwen2.5:7b-instruct --scenarios 30 --out results-ollama
+
+services:
+  graphloop:
+    build: .
+    image: graphloop:local
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    volumes:
+      - ./results:/app/results
+      - ./results-ollama:/app/results-ollama
+
+  ollama:
+    image: ollama/ollama:0.40.16
+    profiles: [ollama]
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-models:/root/.ollama
+
+volumes:
+  ollama-models:

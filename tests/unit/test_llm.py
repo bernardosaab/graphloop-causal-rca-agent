@@ -131,3 +131,12 @@ def test_factory() -> None:
 def test_live_ollama_contract() -> None:  # pragma: no cover - needs a local server
     d = OllamaClient().decide(_request([_fact("a errors", {"a"}, 1.0)], [PROBE_A, PROBE_B]))
     assert d.option_id in {"logs:a", "logs:b"}
+
+
+def test_ollama_host_is_configurable(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OLLAMA_HOST", "http://ollama:11434")
+    assert OllamaClient().base_url == "http://ollama:11434"
+    monkeypatch.setenv("OLLAMA_HOST", "0.0.0.0:11434")
+    assert OllamaClient().base_url == "http://0.0.0.0:11434"
+    monkeypatch.delenv("OLLAMA_HOST")
+    assert OllamaClient().base_url == "http://localhost:11434"

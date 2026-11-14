@@ -1,5 +1,8 @@
 # graphloop
 
+[![ci](https://github.com/bernardosaab/graphloop/actions/workflows/ci.yml/badge.svg)](https://github.com/bernardosaab/graphloop/actions/workflows/ci.yml)
+![python](https://img.shields.io/badge/python-3.12-blue) ![types](https://img.shields.io/badge/mypy-strict-blue) ![license](https://img.shields.io/badge/license-MIT-green)
+
 **Graph engineering meets loop engineering.** An incident root-cause agent built as an explicit
 LangGraph workflow over a **Causal Context Graph (CCG)**, with **bounded loops embedded only where
 iteration pays off**, benchmarked against a classic ReAct tool loop on the same incidents, tools,

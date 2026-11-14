@@ -1,6 +1,6 @@
-# graphloop
+# graphloop: causal RCA agent
 
-[![ci](https://github.com/bernardosaab/graphloop/actions/workflows/ci.yml/badge.svg)](https://github.com/bernardosaab/graphloop/actions/workflows/ci.yml)
+[![ci](https://github.com/bernardosaab/graphloop-causal-rca-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/bernardosaab/graphloop-causal-rca-agent/actions/workflows/ci.yml)
 ![python](https://img.shields.io/badge/python-3.12-blue) ![types](https://img.shields.io/badge/mypy-strict-blue) ![license](https://img.shields.io/badge/license-MIT-green)
 
 **Graph engineering meets loop engineering.** An incident root-cause agent built as an explicit
@@ -12,7 +12,7 @@ budget and model.
 
 ![Replay of one incident: the graph agent follows the timeout trail to catalog-db and its fix is verified; the loop agent, on the same incident, blames a recently deployed service and its rollback fails read-back](docs/img/replay.gif)
 
-<sub>The same incident, two architectures (from the <a href="https://bernardosaab.github.io/graphloop/">live report</a>). <code>graph+memory</code> follows the evidence to <code>catalog-db</code>; a named engineer signs the critical write and the read-back confirms the fix. The <code>loop</code> agent is drawn to a recent deploy, spends about 6x the tokens, and its policy-signed rollback fails read-back.</sub>
+<sub>The same incident, two architectures (from the <a href="https://bernardosaab.github.io/graphloop-causal-rca-agent/">live report</a>). <code>graph+memory</code> follows the evidence to <code>catalog-db</code>; a named engineer signs the critical write and the read-back confirms the fix. The <code>loop</code> agent is drawn to a recent deploy, spends about 6x the tokens, and its policy-signed rollback fails read-back.</sub>
 
 ## Results (100 simulated incidents, paired design)
 
@@ -24,7 +24,7 @@ budget and model.
 
 Exact McNemar test, loop vs graph+memory: p = 7e-05. A run counts as *resolved* only when its
 remediation passed a fail-closed gate, executed, and a **read-back of the system of record**
-confirmed the fix. **[Live interactive report](https://bernardosaab.github.io/graphloop/)**, with the incident graph,
+confirmed the fix. **[Live interactive report](https://bernardosaab.github.io/graphloop-causal-rca-agent/)**, with the incident graph,
 probe-order overlay and side-by-side trajectories. It is rebuilt and redeployed from `main` on every
 push, after the tests pass. Static version: [`results/RESULTS.md`](results/RESULTS.md).
 
@@ -82,8 +82,8 @@ flowchart TB
 installs Python 3.12 for you. Nothing else is needed: the default model is simulated and offline.
 
 ```bash
-git clone https://github.com/bernardosaab/graphloop.git
-cd graphloop
+git clone https://github.com/bernardosaab/graphloop-causal-rca-agent.git
+cd graphloop-causal-rca-agent
 uv sync                                   # create .venv with all dependencies (locked)
 ```
 

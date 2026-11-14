@@ -20,8 +20,9 @@ budget and model.
 
 Exact McNemar test, loop vs graph+memory: p = 7e-05. A run counts as *resolved* only when its
 remediation passed a fail-closed gate, executed, and a **read-back of the system of record**
-confirmed the fix. Full report: [`results/RESULTS.md`](results/RESULTS.md); interactive report with
-the CCG visualisation: `results/report.html`.
+confirmed the fix. **[Live interactive report](https://bernardosaab.github.io/graphloop/)**, with the incident graph,
+probe-order overlay and side-by-side trajectories. It is rebuilt and redeployed from `main` on every
+push, after the tests pass. Static version: [`results/RESULTS.md`](results/RESULTS.md).
 
 ![resolved](results/img/resolved.svg) ![wrong writes](results/img/wrong_writes.svg)
 
@@ -71,18 +72,56 @@ flowchart TB
   scored separately from diagnosis, error-analysis clusters, cost per resolved incident. The test
   suite includes **release gates** (zero wrong writes, significant win over the baseline).
 
-## Quickstart
+## Run and test locally
+
+**Prerequisites:** git and [uv](https://docs.astral.sh/uv/getting-started/installation/). uv
+installs Python 3.12 for you. Nothing else is needed: the default model is simulated and offline.
 
 ```bash
-uv sync
-uv run graphloop run --incident 3 --agent graph+memory --approve prompt   # sign writes yourself
-uv run graphloop bench --scenarios 100 --out results                      # full paired benchmark
-uv run graphloop bench --llm ollama:qwen2.5:7b-instruct --scenarios 30    # real local model
-make check                                                                # ruff, mypy --strict, tests
+git clone https://github.com/bernardosaab/graphloop.git
+cd graphloop
+uv sync                                   # create .venv with all dependencies (locked)
 ```
 
-Everything is open source and runs offline at zero cost: the simulated model needs no network,
-and Ollama serves open-weight models locally.
+**Test.** These are the same checks CI runs. The test suite includes the benchmark release gates.
+
+```bash
+uv run ruff check src tests && uv run ruff format --check src tests
+uv run mypy src                           # strict type checking
+uv run pytest --cov                       # 81 tests, coverage gate 85%
+# or simply: make check                   (macOS/Linux, or Windows with make installed)
+```
+
+**Run one incident** and watch the trajectory, the risk tier and the signature:
+
+```bash
+uv run graphloop run --incident 3 --agent graph+memory
+uv run graphloop run --incident 3 --agent loop                     # same incident, baseline agent
+uv run graphloop run --incident 3 --agent graph --approve prompt   # you sign hard/critical writes
+```
+
+**Run the benchmark and view the report:**
+
+```bash
+uv run graphloop bench --scenarios 100 --seed 7 --out results
+uv run python -m http.server 8000 --directory results   # then open http://localhost:8000/report.html
+```
+
+`results/RESULTS.md` (Markdown, SVG and Mermaid) renders directly on GitHub. The HTML report loads
+its graph library from a CDN, so it needs an internet connection.
+
+**Optional: a real open-weight model through [Ollama](https://ollama.com):**
+
+```bash
+ollama pull qwen2.5:7b-instruct           # one-off download, runs locally for free
+uv run graphloop bench --llm ollama:qwen2.5:7b-instruct --scenarios 30 --out results-ollama
+GRAPHLOOP_OLLAMA=1 uv run pytest -m ollama  # live contract test
+```
+
+**Deploy.** Every push to `main` runs CI (`.github/workflows/ci.yml`). The Pages workflow
+(`.github/workflows/pages.yml`) re-runs the tests, regenerates the benchmark from the committed
+code and publishes the interactive report. Nothing else needs deploying: there are no servers and
+no API keys.
 
 ## Layout
 

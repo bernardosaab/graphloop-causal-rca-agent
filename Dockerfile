@@ -6,7 +6,7 @@
 #   docker run --rm -v "$PWD/results:/app/results" graphloop bench --out results
 
 # ---- build: resolve the locked environment with uv ----------------------------------------------
-FROM ghcr.io/astral-sh/uv:0.12.5-python3.12-bookworm-slim AS build
+FROM ghcr.io/astral-sh/uv:0.12.5-python3.12-trixie-slim AS build
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
     UV_PYTHON_DOWNLOADS=never
@@ -24,7 +24,7 @@ COPY tests ./tests
 RUN uv run pytest -q --cov
 
 # ---- runtime: slim, non-root, no build tooling ---------------------------------------------------
-FROM python:3.12-slim-bookworm AS runtime
+FROM python:3.12-slim-trixie AS runtime
 RUN useradd --create-home --uid 10001 graphloop
 WORKDIR /app
 COPY --from=build --chown=graphloop:graphloop /app/.venv /app/.venv

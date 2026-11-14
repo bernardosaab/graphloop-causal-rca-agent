@@ -1,14 +1,14 @@
 # Benchmark results
 
-_Generated 2026-11-14 02:13 UTC by `graphloop bench` · 100 incidents x 1 repeat(s) · model `simulated` · seed 7 · budget 12 probes._
+_Generated 2026-11-14 09:03 UTC by `graphloop bench` · 100 incidents x 1 repeat(s) · model `simulated` · seed 7 · budget 12 probes._
 
 Every agent receives the same incident stream, alert, service catalog, tools, probe budget and model seed (a paired design). A run counts as **resolved** only when its remediation passed the fail-closed gate, executed, and the read-back confirmed the incident was fixed.
 
 | Agent | Resolved (95% CI) | Precision | Coverage | Wrong writes | Escalated | Tool calls | LLM calls | Tokens | Cost / resolved | Compiled path | p95 |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| `loop` | 56% [46%, 65%] | 56% | 100% | 44 | 0 | 2.7 | 3.7 | 7,220 | $0.00201 | 0% | 17 ms |
-| `graph` | 77% [68%, 84%] | 100% | 77% | 0 | 23 | 3.1 | 3.6 | 1,112 | $0.00027 | 0% | 30 ms |
-| `graph+memory` | 80% [71%, 87%] | 100% | 80% | 0 | 20 | 3.0 | 2.9 | 900 | $0.00021 | 30% | 32 ms |
+| `loop` | 56% [46%, 65%] | 56% | 100% | 44 | 0 | 2.7 | 3.7 | 7,220 | $0.00201 | 0% | 24 ms |
+| `graph` | 77% [68%, 84%] | 100% | 77% | 0 | 23 | 3.1 | 3.6 | 1,112 | $0.00027 | 0% | 47 ms |
+| `graph+memory` | 80% [71%, 87%] | 100% | 80% | 0 | 20 | 3.0 | 2.9 | 900 | $0.00021 | 30% | 43 ms |
 
 ![resolved](img/resolved.svg) ![wrong writes](img/wrong_writes.svg)
 

@@ -136,5 +136,6 @@ def call_tool(
         node=node,
         service=service,
         findings=[f.text for f in call.findings],
+        signals=[f.signal.value for f in call.findings],
     )
     return call

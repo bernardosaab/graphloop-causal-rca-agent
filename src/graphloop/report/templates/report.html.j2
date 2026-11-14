@@ -9,6 +9,7 @@
   :root {
     --bg: #f7f8fa; --panel: #ffffff; --ink: #1d2733; --muted: #5e6b78; --line: #e2e6ea;
     --loop: #d1603d; --graph: #3b82c4; --memory: #2a9d74; --warn: #b7791f; --chip: #eef2f6;
+    --sig: #d6453d; --victim: #e08a2e; --healthy: #2a9d74; --anom: #c9a227; --idle: #9aa7b3;
   }
   @media (prefers-color-scheme: dark) {
     :root { --bg: #0f141a; --panel: #161d25; --ink: #e6ebf0; --muted: #9aa7b3; --line: #26313c;
@@ -21,8 +22,7 @@
   h1 { font-size: 28px; margin: 0 0 4px; letter-spacing: -0.01em; }
   h2 { font-size: 19px; margin: 36px 0 12px; }
   .sub { color: var(--muted); margin: 0 0 24px; }
-  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
-           padding: 18px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
   .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
   .kpi h3 { margin: 0 0 8px; font-size: 14px; display: flex; gap: 8px; align-items: center; }
   .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
@@ -30,26 +30,41 @@
   .muted { color: var(--muted); font-size: 13px; }
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
   th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); }
-  th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase;
-       letter-spacing: .04em; }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
   .table-wrap { overflow-x: auto; }
   .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; }
   .charts svg { width: 100%; height: auto; }
-  .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
-  .tabs button { background: var(--chip); color: var(--ink); border: 1px solid var(--line);
-                 padding: 6px 10px; border-radius: 999px; cursor: pointer; font: inherit;
-                 font-size: 13px; }
-  .tabs button[aria-pressed="true"] { border-color: var(--graph); outline: 2px solid var(--graph); }
-  .incident { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 14px; }
-  @media (max-width: 860px) { .incident { grid-template-columns: 1fr; } }
-  #network, #memory { height: 460px; border: 1px solid var(--line); border-radius: 10px; }
-  ol.steps { margin: 0; padding-left: 20px; font-size: 13px; }
-  ol.steps li { margin: 2px 0; }
-  .verdict { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--chip); }
-  .ok { color: var(--memory); } .bad { color: var(--loop); } .esc { color: var(--warn); }
-  .legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--muted);
-            margin-top: 8px; }
   code { background: var(--chip); padding: 1px 5px; border-radius: 4px; font-size: 13px; }
+  button, select { font: inherit; font-size: 13px; color: var(--ink); background: var(--chip);
+                   border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; cursor: pointer; }
+  button[aria-pressed="true"] { outline: 2px solid var(--graph); border-color: var(--graph); }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .controls { margin: 12px 0; }
+  .controls input[type=range] { flex: 1; min-width: 160px; accent-color: var(--graph); }
+  .flow { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 14px; }
+  .flow span { font-size: 12px; padding: 4px 9px; border-radius: 999px; background: var(--chip);
+               border: 1px solid var(--line); color: var(--muted); transition: all .2s; }
+  .flow span.on { background: var(--graph); border-color: var(--graph); color: #fff; font-weight: 600;
+                  transform: scale(1.06); }
+  .flow span.done { color: var(--ink); }
+  .replay { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 14px; }
+  @media (max-width: 860px) { .replay { grid-template-columns: 1fr; } }
+  #network, #memory { height: 440px; border: 1px solid var(--line); border-radius: 10px; }
+  .counters { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+  .counter { background: var(--chip); border-radius: 8px; padding: 8px 10px; }
+  .counter b { display: block; font-size: 20px; }
+  .bars { margin-bottom: 12px; }
+  .bar { margin: 6px 0; font-size: 12px; }
+  .bar .track { height: 10px; background: var(--chip); border-radius: 6px; overflow: hidden; }
+  .bar .fill { height: 100%; background: var(--graph); transition: width .35s ease; }
+  .log { list-style: none; margin: 0; padding: 0; font-size: 12.5px; max-height: 210px; overflow-y: auto; }
+  .log li { padding: 4px 0; border-bottom: 1px dashed var(--line); color: var(--muted); }
+  .log li.now { color: var(--ink); font-weight: 600; }
+  .log .tag { display: inline-block; min-width: 76px; color: var(--graph); }
+  .verdict { font-size: 12px; padding: 3px 9px; border-radius: 999px; background: var(--chip); }
+  .ok { color: var(--memory); } .bad { color: var(--loop); } .esc { color: var(--warn); }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--muted); margin-top: 8px; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; }
   footer { margin-top: 40px; color: var(--muted); font-size: 13px; }
 </style>
 </head>
@@ -58,7 +73,7 @@
   <h1>Graph engineering vs loop engineering</h1>
   <p class="sub">{{ cfg.scenarios }} simulated incidents × {{ cfg.repeats }} repeat(s) · model
     <code>{{ cfg.llm }}</code> · seed {{ cfg.seed }} · probe budget {{ cfg.policy.max_tool_calls }}
-    · generated {{ generated }}</p>
+    · generated {{ generated }} · <a href="https://github.com/bernardosaab/graphloop">source</a></p>
 
   <section class="kpis">
     {% for s in sums %}
@@ -70,6 +85,54 @@
     </div>
     {% endfor %}
   </section>
+
+  {% if incidents %}
+  <h2>Watch an investigation</h2>
+  <p class="muted" style="margin-top:-6px">Replay any agent on the same incident. The workflow strip shows the active
+    step, the graph shows what each probe revealed, and the bars show the agent's belief over root causes.</p>
+  <div class="panel">
+    <div class="row">
+      <span class="muted">Incident</span>
+      <select id="incident">{% for inc in incidents %}<option value="{{ inc.id }}">{{ inc.id }}</option>{% endfor %}</select>
+      <span class="muted" style="margin-left:8px">Agent</span>
+      <span class="row" id="agents"></span>
+      <span id="verdict" class="verdict" style="margin-left:auto"></span>
+    </div>
+    <div class="row controls">
+      <button id="first" title="Restart">⏮</button>
+      <button id="play" title="Play / pause">▶ Play</button>
+      <button id="next" title="Step">⏭ Step</button>
+      <input id="scrub" type="range" min="0" value="0" aria-label="Replay position">
+      <span id="pos" class="muted"></span>
+      <select id="speed" aria-label="Speed"><option value="900">1×</option><option value="450" selected>2×</option><option value="200">4×</option></select>
+    </div>
+    <div class="flow" id="flow"></div>
+    <div class="replay">
+      <div>
+        <div id="network"></div>
+        <div class="legend">
+          <span><i style="background:var(--sig)"></i>failure signature</span>
+          <span><i style="background:var(--victim)"></i>victim (times out downstream)</span>
+          <span><i style="background:var(--anom)"></i>anomalous</span>
+          <span><i style="background:var(--healthy)"></i>healthy</span>
+          <span><i style="background:var(--idle)"></i>not probed</span>
+          <span>■ change · ★ incident · ▲ fault mode</span>
+        </div>
+      </div>
+      <div>
+        <div class="counters">
+          <div class="counter"><span class="muted">tool calls</span><b id="c-tools">0</b></div>
+          <div class="counter"><span class="muted">model calls</span><b id="c-llm">0</b></div>
+          <div class="counter"><span class="muted">tokens</span><b id="c-tok">0</b></div>
+        </div>
+        <div class="muted">Belief: top root-cause hypotheses</div>
+        <div class="bars" id="bars"></div>
+        <div class="muted" style="margin-bottom:4px">What is happening</div>
+        <ol class="log" id="log"></ol>
+      </div>
+    </div>
+  </div>
+  {% endif %}
 
   <h2>Outcomes and cost</h2>
   <div class="panel table-wrap">
@@ -106,31 +169,6 @@
     </td></tr>{% endfor %}</tbody>
   </table></div>
 
-  {% if incidents %}
-  <h2>Inside one incident</h2>
-  <div class="tabs" role="group" aria-label="Incident">
-    {% for inc in incidents %}<button type="button" data-id="{{ inc.id }}" aria-pressed="{{ 'true' if loop.first else 'false' }}">{{ inc.id }}</button>{% endfor %}
-  </div>
-  {% for inc in incidents %}
-  <section class="incident" data-incident="{{ inc.id }}" {% if not loop.first %}hidden{% endif %}>
-    <div class="panel">
-      <div class="muted">Causal Context Graph for this incident. <strong>#n</strong> marks the order in which <code>graph+memory</code> probed each service. Ground truth: <code>{{ inc.truth }}</code></div>
-      {% if loop.first %}<div id="network"></div>{% endif %}
-      <div class="legend"><span>● service</span><span>◆ evidence</span><span>■ change</span><span>▲ fault mode</span><span>★ incident</span></div>
-    </div>
-    <div class="panel">
-      {% for agent, st in inc.steps.items() %}
-        {% set o = inc.outcomes[agent] %}
-        <h3 style="margin:4px 0 6px;font-size:14px"><code>{{ agent }}</code>
-          {% if o %}<span class="verdict {{ 'ok' if o.resolved else ('esc' if o.status == 'escalated' else 'bad') }}">
-          {{ 'resolved' if o.resolved else o.status }} · {{ o.diagnosis or '—' }}</span>{% endif %}</h3>
-        <ol class="steps">{% for s in st %}<li><strong>{{ s.node }}</strong>{% if s.detail %} — {{ s.detail }}{% endif %}</li>{% endfor %}</ol>
-      {% endfor %}
-    </div>
-  </section>
-  {% endfor %}
-  {% endif %}
-
   {% if memory and memory.edges %}
   <h2>Learned causal memory</h2>
   <div class="panel"><div class="muted">Bi-temporal <code>CAUSES</code> assertions written only after a verified read-back. Edge width = support.</div>
@@ -142,43 +180,136 @@
 </main>
 <script>
   const NETWORKS = {{ networks_json | safe }};
+  const REPLAYS = {{ replays_json | safe }};
+  const OUTCOMES = {{ outcomes_json | safe }};
+  const WORKFLOWS = {{ workflows_json | safe }};
   const MEMORY = {{ memory_json | safe }};
-  const dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const ink = dark ? '#e6ebf0' : '#1d2733';
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const ink = css('--ink');
+  const STATUS = { signature: '--sig', victim: '--victim', anomalous: '--anom', healthy: '--healthy',
+                   hallucinated: '--loop', inspected: '--graph' };
   const groups = {
-    service: { shape: 'dot', size: 16, color: { background: '#3b82c4', border: '#2c6aa3' } },
-    evidence: { shape: 'diamond', size: 9, color: { background: '#8a63d2', border: '#6d48b8' } },
-    change: { shape: 'square', size: 9, color: { background: '#c99a2e', border: '#a37b1c' } },
-    fault: { shape: 'triangle', size: 12, color: { background: '#d1603d', border: '#a8492c' } },
+    service: { shape: 'dot', size: 15 },
+    change: { shape: 'square', size: 8, color: { background: '#c99a2e', border: '#a37b1c' } },
+    fault: { shape: 'triangle', size: 11, color: { background: '#d1603d', border: '#a8492c' } },
     incident: { shape: 'star', size: 20, color: { background: '#2a9d74', border: '#1f7a5a' } },
   };
   const options = {
-    groups, physics: { stabilization: { iterations: 250 }, barnesHut: { springLength: 110 } },
-    nodes: { font: { color: ink, size: 12 } },
-    edges: { arrows: 'to', font: { size: 9, color: ink, strokeWidth: 0 }, color: { opacity: 0.45 },
+    groups, physics: { stabilization: { iterations: 300 }, barnesHut: { springLength: 120 } },
+    nodes: { font: { color: ink, size: 13 } },
+    edges: { arrows: 'to', font: { size: 9, color: ink, strokeWidth: 0 }, color: { opacity: 0.4 },
              smooth: { type: 'dynamic' } },
     interaction: { hover: true },
   };
-  function draw(el, data) {
-    if (!el || !data || typeof vis === 'undefined') return;
-    const nodes = data.nodes.map(n => n.probed ? { ...n, borderWidth: 4, color: { border: '#2a9d74', background: '#3b82c4' } } : n);
-    const edges = data.edges.map(e => e.kind === 'CAUSES' || e.kind === 'ROOT_CAUSE_OF'
-      ? { ...e, color: { color: '#d1603d', opacity: 1 }, width: 1 + (e.value || 1) } : e);
-    new vis.Network(el, { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) }, options);
+
+  // ---- replay -------------------------------------------------------------------------
+  const el = id => document.getElementById(id);
+  const state = { sid: null, agent: 'graph+memory', idx: 0, timer: null, nodes: null };
+
+  function buildNetwork(sid) {
+    const data = NETWORKS[sid];
+    if (!data || typeof vis === 'undefined') return;
+    const keep = new Set(data.nodes.filter(n => n.group !== 'evidence').map(n => n.id));
+    const nodes = data.nodes.filter(n => keep.has(n.id)).map(n => ({
+      ...n, label: n.label.replace(/^#\d+ /, ''),
+      color: n.group === 'service' ? { background: css('--idle'), border: css('--idle') } : undefined,
+    }));
+    const edges = data.edges.filter(e => keep.has(e.from) && keep.has(e.to)).map(e =>
+      e.kind === 'CAUSES' || e.kind === 'ROOT_CAUSE_OF' ? { ...e, color: { color: '#d1603d', opacity: 1 } } : e);
+    state.nodes = new vis.DataSet(nodes);
+    new vis.Network(el('network'), { nodes: state.nodes, edges: new vis.DataSet(edges) }, options);
   }
-  const net = document.getElementById('network');
-  const firstId = Object.keys(NETWORKS)[0];
-  if (firstId) draw(net, NETWORKS[firstId]);
-  document.querySelectorAll('.tabs button').forEach(btn => btn.addEventListener('click', () => {
-    document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-pressed', b === btn));
-    document.querySelectorAll('[data-incident]').forEach(s => {
-      const show = s.dataset.incident === btn.dataset.id;
-      s.hidden = !show;
-      if (show) { const panel = s.querySelector('.panel'); panel.insertBefore(net, panel.children[1]); }
+
+  function frames() { return (REPLAYS[state.sid] || {})[state.agent] || []; }
+
+  function render() {
+    const fs = frames();
+    if (!fs.length) return;
+    const f = fs[Math.min(state.idx, fs.length - 1)];
+    el('scrub').max = fs.length - 1; el('scrub').value = state.idx;
+    el('pos').textContent = `${state.idx + 1} / ${fs.length}`;
+    // workflow strip
+    const flow = WORKFLOWS[state.agent === 'loop' ? 'loop' : 'graph'];
+    const seen = new Set(fs.slice(0, state.idx + 1).map(x => x.node));
+    el('flow').innerHTML = flow.map(n =>
+      `<span class="${n === f.node ? 'on' : seen.has(n) ? 'done' : ''}">${n}</span>`).join('');
+    // counters
+    el('c-tools').textContent = f.tools; el('c-llm').textContent = f.llm;
+    el('c-tok').textContent = f.tokens.toLocaleString();
+    // belief
+    el('bars').innerHTML = (f.belief.length ? f.belief : []).map(([h, p]) =>
+      `<div class="bar"><div class="row" style="justify-content:space-between"><code>${h}</code><span>${(p * 100).toFixed(0)}%</span></div>
+       <div class="track"><div class="fill" style="width:${(p * 100).toFixed(1)}%"></div></div></div>`).join('')
+      || (state.agent === 'loop'
+          ? '<div class="muted">The loop agent keeps no explicit belief; its reasoning lives in a growing transcript.</div>'
+          : '<div class="muted">No hypotheses yet.</div>');
+    // log
+    const start = Math.max(0, state.idx - 30);
+    el('log').innerHTML = fs.slice(start, state.idx + 1).map((x, i) =>
+      `<li class="${start + i === state.idx ? 'now' : ''}"><span class="tag">${x.node}</span>${escapeHtml(x.text)}</li>`).join('');
+    el('log').scrollTop = el('log').scrollHeight;
+    // graph colouring
+    if (state.nodes) {
+      state.nodes.update(state.nodes.get({ filter: n => n.group === 'service' }).map(n => {
+        const name = n.id.slice(4);
+        const st = f.probed[name];
+        const c = st ? css(STATUS[st]) : css('--idle');
+        const focus = f.focus === name;
+        return { id: n.id, size: focus ? 26 : (st ? 18 : 13), borderWidth: focus ? 5 : 1,
+                 color: { background: c, border: focus ? ink : c } };
+      }));
+    }
+    // verdict
+    const o = (OUTCOMES[state.sid] || {})[state.agent];
+    if (o) {
+      const cls = o.resolved ? 'ok' : o.status === 'escalated' ? 'esc' : 'bad';
+      const word = o.resolved ? 'resolved' : o.status === 'escalated' ? 'escalated' : 'wrong fix';
+      el('verdict').className = `verdict ${cls}`;
+      el('verdict').textContent = `${word}: ${o.diagnosis || '-'} (truth ${o.truth})`;
+    }
+  }
+
+  function escapeHtml(s) { return s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]); }
+  function stop() { clearInterval(state.timer); state.timer = null; el('play').textContent = '▶ Play'; }
+  function play() {
+    if (state.timer) return stop();
+    if (state.idx >= frames().length - 1) state.idx = 0;
+    el('play').textContent = '⏸ Pause';
+    state.timer = setInterval(() => {
+      if (state.idx >= frames().length - 1) return stop();
+      state.idx++; render();
+    }, Number(el('speed').value));
+  }
+  function selectIncident(sid) {
+    stop(); state.sid = sid; state.idx = 0;
+    const agents = Object.keys(REPLAYS[sid] || {});
+    if (!agents.includes(state.agent)) state.agent = agents[agents.length - 1];
+    el('agents').innerHTML = agents.map(a =>
+      `<button type="button" data-agent="${a}" aria-pressed="${a === state.agent}">${a}</button>`).join('');
+    el('agents').querySelectorAll('button').forEach(b => b.onclick = () => {
+      stop(); state.agent = b.dataset.agent; state.idx = 0;
+      el('agents').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
+      render();
     });
-    draw(net, NETWORKS[btn.dataset.id]);
-  }));
-  draw(document.getElementById('memory'), MEMORY);
+    buildNetwork(sid); render();
+  }
+  if (el('incident')) {
+    el('incident').onchange = e => selectIncident(e.target.value);
+    el('play').onclick = play;
+    el('first').onclick = () => { stop(); state.idx = 0; render(); };
+    el('next').onclick = () => { stop(); state.idx = Math.min(state.idx + 1, frames().length - 1); render(); };
+    el('scrub').oninput = e => { stop(); state.idx = Number(e.target.value); render(); };
+    el('speed').onchange = () => { if (state.timer) { stop(); play(); } };
+    selectIncident(el('incident').value);
+  }
+
+  // ---- learned memory -----------------------------------------------------------------
+  if (MEMORY && el('memory') && typeof vis !== 'undefined') {
+    const nodes = MEMORY.nodes.map(n => n.group === 'service'
+      ? { ...n, color: { background: css('--graph'), border: css('--graph') } } : n);
+    const edges = MEMORY.edges.map(e => ({ ...e, color: { color: '#d1603d', opacity: 0.9 }, width: 1 + (e.value || 1) / 2 }));
+    new vis.Network(el('memory'), { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) }, options);
+  }
 </script>
 </body>
 </html>

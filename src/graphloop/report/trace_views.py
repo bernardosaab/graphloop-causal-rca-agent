@@ -16,6 +16,136 @@ class Step:
     detail: str
 
 
+#: The workflow each agent runs, in display order (the replay highlights the active node).
+WORKFLOWS: dict[str, list[str]] = {
+    "graph": [
+        "triage",
+        "hypothesize",
+        "recipe",
+        "select_probe",
+        "run_probe",
+        "counterfactual",
+        "diagnose",
+        "critique",
+        "finalize",
+        "remediation",
+    ],
+    "loop": ["reason", "act", "remediation"],
+}
+
+#: Narration for steps that complete without emitting a more specific event.
+_SILENT = {
+    "triage": "alert received; change feed and alert evidence written to the graph",
+    "hypothesize": "hypotheses scoped to the blast radius",
+    "recipe": "no corroborated recipe matches; continuing with the agentic loop",
+    "select_probe": "one candidate probe left: chosen without the model",
+    "run_probe": "no probe left to run",
+    "counterfactual": "leading hypothesis is consistent with the graph",
+    "critique": "accepted: the failure signature was observed",
+    "finalize": "investigation closed",
+    "reason": "model consulted",
+    "act": "tool executed",
+}
+
+_SIGNATURES = {"code_exception", "config_error", "oom_killed", "store_unavailable"}
+
+
+def _status(signals: list[str]) -> str:
+    """How a probe result should be drawn: what this observation says about the service."""
+    if any(s in _SIGNATURES for s in signals):
+        return "signature"
+    if "upstream_timeout" in signals:
+        return "victim"
+    if signals and all(s == "healthy" for s in signals):
+        return "healthy"
+    if any(s in {"error_spike", "latency_spike", "cpu_saturation"} for s in signals):
+        return "anomalous"
+    return "inspected"
+
+
+def frames(tracer: Tracer) -> list[dict[str, Any]]:
+    """Replayable snapshots: one per meaningful event, each carrying the cumulative state."""
+    out: list[dict[str, Any]] = []
+    node = ""
+    belief: list[list[Any]] = []
+    probed: dict[str, str] = {}
+    tools = llm = tokens = 0
+    narrated = True
+
+    def snapshot(kind: str, text: str, focus: str | None = None) -> dict[str, Any]:
+        return {
+            "node": node,
+            "kind": kind,
+            "text": text,
+            "focus": focus,
+            "probed": dict(probed),
+            "belief": belief,
+            "tools": tools,
+            "llm": llm,
+            "tokens": tokens,
+        }
+
+    for e in tracer.events:
+        kind, focus, text = e.kind.value, None, ""
+        if e.kind is EventKind.NODE:
+            if not narrated:  # the previous step finished silently: still show it
+                out.append(snapshot("node", _SILENT.get(node, f"{node} completed")))
+            node, narrated = e.name, False
+            continue  # the next event carries the narration for this node
+        if e.kind is EventKind.TOOL:
+            tools += 1
+            focus = str(e.data.get("service"))
+            status = (
+                "hallucinated"
+                if e.data.get("hallucinated")
+                else _status(list(e.data.get("signals", [])))
+            )
+            # Stronger evidence wins when a service is probed more than once.
+            rank = ["inspected", "healthy", "anomalous", "victim", "signature", "hallucinated"]
+            if rank.index(status) >= rank.index(probed.get(focus, "inspected")):
+                probed[focus] = status
+            text = f"{e.name}({focus}): " + "; ".join(e.data.get("findings", []))
+        elif e.kind is EventKind.LLM:
+            llm += 1
+            tokens += int(e.data["prompt_tokens"]) + int(e.data["completion_tokens"])
+            text = (
+                f"model chose {e.data.get('choice_text')} (from {e.data.get('n_options')} options)"
+            )
+        elif e.kind is EventKind.BELIEF:
+            belief = [list(pair) for pair in e.data.get("top", [])]
+            text = "belief updated: " + ", ".join(f"{h} {p:.0%}" for h, p in belief)
+        elif e.kind is EventKind.DEGRADED:
+            text = f"DEGRADED: {e.data.get('reason')}; rule-based fallback"
+        elif e.kind is EventKind.NOTE:
+            text = e.name.replace("_", " ") + _note_detail(e.data)
+        elif e.kind is EventKind.DIAGNOSIS:
+            text = f"diagnosis: {e.data.get('diagnosis')}"
+        elif e.kind is EventKind.GOVERNANCE:
+            node = "remediation"
+            text = e.name.replace("_", " ") + _note_detail(e.data)
+        narrated = True
+        out.append(snapshot(kind, text, focus))
+    if not narrated:
+        out.append(snapshot("node", _SILENT.get(node, f"{node} completed")))
+    return out
+
+
+def _note_detail(data: dict[str, Any]) -> str:
+    keys = (
+        "reason",
+        "diagnosis",
+        "recipe",
+        "quote",
+        "signer",
+        "tier",
+        "resolved",
+        "probe",
+        "services",
+    )
+    parts = [f"{k}={data[k]}" for k in keys if k in data]
+    return f" ({', '.join(parts)})" if parts else ""
+
+
 def steps(tracer: Tracer, limit: int = 18) -> list[Step]:
     """Collapse a trace into readable steps: each node with what it did."""
     out: list[Step] = []

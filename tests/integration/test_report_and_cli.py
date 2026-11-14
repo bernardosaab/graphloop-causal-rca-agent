@@ -10,7 +10,13 @@ from graphloop.cli.app import app
 from graphloop.eval.runner import BenchmarkConfig, BenchmarkResult, run_benchmark
 from graphloop.report.summary import learning_curve, paired_test, summaries, summarise
 from graphloop.report.svg import Bar, bar_chart, line_chart
-from graphloop.report.trace_views import incident_network, memory_network, mermaid, showcase
+from graphloop.report.trace_views import (
+    frames,
+    incident_network,
+    memory_network,
+    mermaid,
+    showcase,
+)
 from graphloop.report.writer import write_report
 
 
@@ -65,7 +71,8 @@ def test_write_report(small: BenchmarkResult, tmp_path: Path) -> None:
     assert "```mermaid" in md
     html = paths["html"].read_text(encoding="utf-8")
     assert "vis-network@9.1.9" in html
-    assert "Inside one incident" in html
+    assert "Watch an investigation" in html
+    assert "REPLAYS" in html
     data = json.loads(paths["summary"].read_text(encoding="utf-8"))
     assert {d["agent"] for d in data} == {"loop", "graph", "graph+memory"}
     assert (tmp_path / "img" / "resolved.svg").exists()
@@ -84,3 +91,19 @@ def test_cli_run_and_bench(tmp_path: Path) -> None:
     result = runner.invoke(app, ["bench", "--scenarios", "6", "--out", str(tmp_path)])
     assert result.exit_code == 0, result.output
     assert (tmp_path / "report.html").exists()
+
+
+def test_replay_frames_tell_the_story(small: BenchmarkResult) -> None:
+    sid = showcase(small)[0]
+    fs = frames(small.traces[("graph+memory", sid)])
+    assert fs[0]["node"] == "hypothesize" or fs[0]["node"] == "triage"
+    assert fs[-1]["node"] == "remediation"  # governance steps are replayed too
+    counts = [f["tools"] for f in fs]
+    assert counts == sorted(counts)  # cumulative counters never go backwards
+    root = small.for_agent("graph+memory")[0].root_cause
+    assert any(f["belief"] for f in fs)
+    statuses = {s for f in fs for s in f["probed"].values()}
+    assert statuses <= {"signature", "victim", "anomalous", "healthy", "inspected", "hallucinated"}
+    assert root
+    loop_frames = frames(small.traces[("loop", sid)])
+    assert {f["node"] for f in loop_frames} <= {"reason", "act", "remediation"}

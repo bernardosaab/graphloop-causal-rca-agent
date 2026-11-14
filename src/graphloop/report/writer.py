@@ -7,6 +7,7 @@ import json
 from dataclasses import asdict, fields
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 from jinja2 import Environment, PackageLoader, select_autoescape
 
@@ -14,12 +15,13 @@ from graphloop.eval.runner import BenchmarkResult
 from graphloop.report.summary import AgentSummary, learning_curve, paired_test, summaries
 from graphloop.report.svg import Bar, bar_chart, colour, line_chart
 from graphloop.report.trace_views import (
+    WORKFLOWS,
     by_id,
+    frames,
     incident_network,
     memory_network,
     mermaid,
     showcase,
-    steps,
 )
 
 
@@ -193,7 +195,7 @@ def render_html(result: BenchmarkResult, sums: list[AgentSummary], charts: dict[
         autoescape=select_autoescape(["html", "j2"]),
     )
     picks = showcase(result)
-    incidents = []
+    incidents: list[dict[str, Any]] = []
     for sid in picks:
         rec = by_id(result.for_agent("graph+memory")).get(sid) if result.memory else None
         tracers = {a: result.traces.get((a, sid)) for a in result.config.agents}
@@ -202,7 +204,7 @@ def render_html(result: BenchmarkResult, sums: list[AgentSummary], charts: dict[
                 "id": sid,
                 "truth": rec.root_cause if rec else "",
                 "outcomes": {a: by_id(result.for_agent(a)).get(sid) for a in result.config.agents},
-                "steps": {a: steps(t) for a, t in tracers.items() if t is not None},
+                "frames": {a: frames(t) for a, t in tracers.items() if t is not None},
                 "network": (
                     incident_network(result.memory, sid, tracers.get("graph+memory"))
                     if result.memory is not None
@@ -221,6 +223,24 @@ def render_html(result: BenchmarkResult, sums: list[AgentSummary], charts: dict[
         generated=f"{datetime.now(UTC):%Y-%m-%d %H:%M} UTC",
         networks_json=json.dumps({i["id"]: i["network"] for i in incidents}),
         memory_json=json.dumps(memory_network(result.memory) if result.memory else None),
+        replays_json=json.dumps({i["id"]: i["frames"] for i in incidents}),
+        outcomes_json=json.dumps(
+            {
+                i["id"]: {
+                    a: {
+                        "resolved": r.resolved,
+                        "status": r.status,
+                        "diagnosis": r.diagnosis,
+                        "truth": r.root_cause,
+                        "path": r.path,
+                    }
+                    for a, r in i["outcomes"].items()
+                    if r is not None
+                }
+                for i in incidents
+            }
+        ),
+        workflows_json=json.dumps(WORKFLOWS),
     )
 
 

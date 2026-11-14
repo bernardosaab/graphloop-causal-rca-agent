@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>graphloop benchmark</title>
+<script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
+<style>
+  :root {
+    --bg: #f7f8fa; --panel: #ffffff; --ink: #1d2733; --muted: #5e6b78; --line: #e2e6ea;
+    --loop: #d1603d; --graph: #3b82c4; --memory: #2a9d74; --warn: #b7791f; --chip: #eef2f6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0f141a; --panel: #161d25; --ink: #e6ebf0; --muted: #9aa7b3; --line: #26313c;
+            --chip: #1e2731; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.55 ui-sans-serif, system-ui, "Segoe UI", Helvetica, Arial, sans-serif; }
+  main { max-width: 1180px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 28px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  h2 { font-size: 19px; margin: 36px 0 12px; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+           padding: 18px; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+  .kpi h3 { margin: 0 0 8px; font-size: 14px; display: flex; gap: 8px; align-items: center; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .big { font-size: 30px; font-weight: 650; }
+  .muted { color: var(--muted); font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase;
+       letter-spacing: .04em; }
+  .table-wrap { overflow-x: auto; }
+  .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; }
+  .charts svg { width: 100%; height: auto; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .tabs button { background: var(--chip); color: var(--ink); border: 1px solid var(--line);
+                 padding: 6px 10px; border-radius: 999px; cursor: pointer; font: inherit;
+                 font-size: 13px; }
+  .tabs button[aria-pressed="true"] { border-color: var(--graph); outline: 2px solid var(--graph); }
+  .incident { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 14px; }
+  @media (max-width: 860px) { .incident { grid-template-columns: 1fr; } }
+  #network, #memory { height: 460px; border: 1px solid var(--line); border-radius: 10px; }
+  ol.steps { margin: 0; padding-left: 20px; font-size: 13px; }
+  ol.steps li { margin: 2px 0; }
+  .verdict { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--chip); }
+  .ok { color: var(--memory); } .bad { color: var(--loop); } .esc { color: var(--warn); }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--muted);
+            margin-top: 8px; }
+  code { background: var(--chip); padding: 1px 5px; border-radius: 4px; font-size: 13px; }
+  footer { margin-top: 40px; color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Graph engineering vs loop engineering</h1>
+  <p class="sub">{{ cfg.scenarios }} simulated incidents × {{ cfg.repeats }} repeat(s) · model
+    <code>{{ cfg.llm }}</code> · seed {{ cfg.seed }} · probe budget {{ cfg.policy.max_tool_calls }}
+    · generated {{ generated }}</p>
+
+  <section class="kpis">
+    {% for s in sums %}
+    <div class="panel kpi">
+      <h3><span class="dot" style="background: {{ {'loop':'var(--loop)','graph':'var(--graph)','graph+memory':'var(--memory)'}.get(s.agent, 'var(--muted)') }}"></span>{{ s.agent }}</h3>
+      <div class="big">{{ '%.0f' % (s.resolved.rate * 100) }}%</div>
+      <div class="muted">resolved, verified by read-back · 95% CI {{ '%.0f' % (s.resolved.low*100) }}–{{ '%.0f' % (s.resolved.high*100) }}%</div>
+      <div class="muted">{{ s.wrong_writes }} wrong writes · {{ s.escalated }} escalated · {{ '%.0f' % s.tokens }} tokens/incident</div>
+    </div>
+    {% endfor %}
+  </section>
+
+  <h2>Outcomes and cost</h2>
+  <div class="panel table-wrap">
+    <table>
+      <thead><tr><th>Agent</th><th>Resolved</th><th>Precision</th><th>Coverage</th><th>Wrong writes</th>
+        <th>Tool calls</th><th>LLM calls</th><th>Tokens</th><th>Cost / resolved</th><th>Compiled</th>
+        <th>Recall@3</th><th>p50 / p95</th></tr></thead>
+      <tbody>
+      {% for s in sums %}
+        <tr><td><code>{{ s.agent }}</code></td><td>{{ s.resolved }}</td>
+          <td>{{ '%.0f' % (s.precision*100) }}%</td><td>{{ '%.0f' % (s.coverage*100) }}%</td>
+          <td>{{ s.wrong_writes }}</td><td>{{ '%.1f' % s.tool_calls }}</td><td>{{ '%.1f' % s.llm_calls }}</td>
+          <td>{{ '{:,.0f}'.format(s.tokens) }}</td>
+          <td>{% if s.cost_per_resolved %}${{ '%.5f' % s.cost_per_resolved }}{% else %}n/a{% endif %}</td>
+          <td>{{ '%.0f' % (s.compiled_share*100) }}%</td>
+          <td>{% if s.retrieval_at_3 is not none %}{{ '%.0f' % (s.retrieval_at_3*100) }}%{% else %}–{% endif %}</td>
+          <td>{{ '%.0f' % s.p50_ms }} / {{ '%.0f' % s.p95_ms }} ms</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% if test %}<p class="muted">Paired exact McNemar (<code>loop</code> vs <code>graph+memory</code>, same incidents):
+      {{ test.b }} resolved only by loop, {{ test.c }} only by graph+memory, p = {{ '%.2g' % test.p_value }}.</p>{% endif %}
+  </div>
+
+  <div class="charts" style="margin-top:14px">
+    {% for name, svg in charts.items() %}<div class="panel">{{ svg | safe }}</div>{% endfor %}
+  </div>
+
+  <h2>Error analysis</h2>
+  <div class="panel table-wrap"><table>
+    <thead><tr><th>Agent</th><th>Failure clusters (most frequent first)</th></tr></thead>
+    <tbody>{% for s in sums %}<tr><td><code>{{ s.agent }}</code></td><td>
+      {% for k, v in s.failures.items() %}<code>{{ k }}</code> × {{ v }}{% if not loop.last %}, {% endif %}{% else %}none{% endfor %}
+    </td></tr>{% endfor %}</tbody>
+  </table></div>
+
+  {% if incidents %}
+  <h2>Inside one incident</h2>
+  <div class="tabs" role="group" aria-label="Incident">
+    {% for inc in incidents %}<button type="button" data-id="{{ inc.id }}" aria-pressed="{{ 'true' if loop.first else 'false' }}">{{ inc.id }}</button>{% endfor %}
+  </div>
+  {% for inc in incidents %}
+  <section class="incident" data-incident="{{ inc.id }}" {% if not loop.first %}hidden{% endif %}>
+    <div class="panel">
+      <div class="muted">Causal Context Graph for this incident. <strong>#n</strong> marks the order in which <code>graph+memory</code> probed each service. Ground truth: <code>{{ inc.truth }}</code></div>
+      {% if loop.first %}<div id="network"></div>{% endif %}
+      <div class="legend"><span>● service</span><span>◆ evidence</span><span>■ change</span><span>▲ fault mode</span><span>★ incident</span></div>
+    </div>
+    <div class="panel">
+      {% for agent, st in inc.steps.items() %}
+        {% set o = inc.outcomes[agent] %}
+        <h3 style="margin:4px 0 6px;font-size:14px"><code>{{ agent }}</code>
+          {% if o %}<span class="verdict {{ 'ok' if o.resolved else ('esc' if o.status == 'escalated' else 'bad') }}">
+          {{ 'resolved' if o.resolved else o.status }} · {{ o.diagnosis or '—' }}</span>{% endif %}</h3>
+        <ol class="steps">{% for s in st %}<li><strong>{{ s.node }}</strong>{% if s.detail %} — {{ s.detail }}{% endif %}</li>{% endfor %}</ol>
+      {% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+  {% endif %}
+
+  {% if memory and memory.edges %}
+  <h2>Learned causal memory</h2>
+  <div class="panel"><div class="muted">Bi-temporal <code>CAUSES</code> assertions written only after a verified read-back. Edge width = support.</div>
+    <div id="memory"></div></div>
+  {% endif %}
+
+  <footer>Simulated results measure the architecture under controlled conditions, not a specific model.
+    See the repository's ADRs for the evaluation design and its limits.</footer>
+</main>
+<script>
+  const NETWORKS = {{ networks_json | safe }};
+  const MEMORY = {{ memory_json | safe }};
+  const dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const ink = dark ? '#e6ebf0' : '#1d2733';
+  const groups = {
+    service: { shape: 'dot', size: 16, color: { background: '#3b82c4', border: '#2c6aa3' } },
+    evidence: { shape: 'diamond', size: 9, color: { background: '#8a63d2', border: '#6d48b8' } },
+    change: { shape: 'square', size: 9, color: { background: '#c99a2e', border: '#a37b1c' } },
+    fault: { shape: 'triangle', size: 12, color: { background: '#d1603d', border: '#a8492c' } },
+    incident: { shape: 'star', size: 20, color: { background: '#2a9d74', border: '#1f7a5a' } },
+  };
+  const options = {
+    groups, physics: { stabilization: { iterations: 250 }, barnesHut: { springLength: 110 } },
+    nodes: { font: { color: ink, size: 12 } },
+    edges: { arrows: 'to', font: { size: 9, color: ink, strokeWidth: 0 }, color: { opacity: 0.45 },
+             smooth: { type: 'dynamic' } },
+    interaction: { hover: true },
+  };
+  function draw(el, data) {
+    if (!el || !data || typeof vis === 'undefined') return;
+    const nodes = data.nodes.map(n => n.probed ? { ...n, borderWidth: 4, color: { border: '#2a9d74', background: '#3b82c4' } } : n);
+    const edges = data.edges.map(e => e.kind === 'CAUSES' || e.kind === 'ROOT_CAUSE_OF'
+      ? { ...e, color: { color: '#d1603d', opacity: 1 }, width: 1 + (e.value || 1) } : e);
+    new vis.Network(el, { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) }, options);
+  }
+  const net = document.getElementById('network');
+  const firstId = Object.keys(NETWORKS)[0];
+  if (firstId) draw(net, NETWORKS[firstId]);
+  document.querySelectorAll('.tabs button').forEach(btn => btn.addEventListener('click', () => {
+    document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-pressed', b === btn));
+    document.querySelectorAll('[data-incident]').forEach(s => {
+      const show = s.dataset.incident === btn.dataset.id;
+      s.hidden = !show;
+      if (show) { const panel = s.querySelector('.panel'); panel.insertBefore(net, panel.children[1]); }
+    });
+    draw(net, NETWORKS[btn.dataset.id]);
+  }));
+  draw(document.getElementById('memory'), MEMORY);
+</script>
+</body>
+</html>

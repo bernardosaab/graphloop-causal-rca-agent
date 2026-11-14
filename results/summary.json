@@ -1,0 +1,87 @@
+[
+  {
+    "agent": "loop",
+    "n": 100,
+    "resolved": {
+      "rate": 0.56,
+      "low": 0.4622792771125631,
+      "high": 0.6532813459903167,
+      "n": 100
+    },
+    "precision": 0.56,
+    "coverage": 1.0,
+    "escalated": 0,
+    "wrong_writes": 44,
+    "tool_calls": 2.74,
+    "llm_calls": 3.74,
+    "tokens": 7220.31,
+    "cost_usd": 0.11246129999999999,
+    "cost_per_resolved": 0.0020082374999999997,
+    "p50_ms": 11.79214999137912,
+    "p95_ms": 16.730050003388897,
+    "compiled_share": 0.0,
+    "retrieval_at_3": null,
+    "degraded_runs": 0,
+    "failures": {
+      "confounded_by_change": 41,
+      "wrong_fault_type": 3
+    },
+    "pass_hat_k": null
+  },
+  {
+    "agent": "graph",
+    "n": 100,
+    "resolved": {
+      "rate": 0.77,
+      "low": 0.6784543514317231,
+      "high": 0.841568452531236,
+      "n": 100
+    },
+    "precision": 1.0,
+    "coverage": 0.77,
+    "escalated": 23,
+    "wrong_writes": 0,
+    "tool_calls": 3.06,
+    "llm_calls": 3.6,
+    "tokens": 1111.57,
+    "cost_usd": 0.020584949999999998,
+    "cost_per_resolved": 0.000267337012987013,
+    "p50_ms": 23.69294999516569,
+    "p95_ms": 30.04057000434841,
+    "compiled_share": 0.0,
+    "retrieval_at_3": 1.0,
+    "degraded_runs": 0,
+    "failures": {
+      "escalated": 23
+    },
+    "pass_hat_k": null
+  },
+  {
+    "agent": "graph+memory",
+    "n": 100,
+    "resolved": {
+      "rate": 0.8,
+      "low": 0.7111690380734977,
+      "high": 0.8666340774409013,
+      "n": 100
+    },
+    "precision": 1.0,
+    "coverage": 0.8,
+    "escalated": 20,
+    "wrong_writes": 0,
+    "tool_calls": 2.97,
+    "llm_calls": 2.88,
+    "tokens": 899.69,
+    "cost_usd": 0.016627799999999998,
+    "cost_per_resolved": 0.00020784749999999997,
+    "p50_ms": 23.463799996534362,
+    "p95_ms": 32.07017499371432,
+    "compiled_share": 0.3,
+    "retrieval_at_3": 1.0,
+    "degraded_runs": 0,
+    "failures": {
+      "escalated": 20
+    },
+    "pass_hat_k": null
+  }
+]

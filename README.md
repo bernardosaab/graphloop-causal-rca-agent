@@ -10,6 +10,10 @@ budget and model.
 
 > The model proposes; the harness decides what actually happens.
 
+![Replay of one incident: the graph agent follows the timeout trail to catalog-db and its fix is verified; the loop agent, on the same incident, blames a recently deployed service and its rollback fails read-back](docs/img/replay.gif)
+
+<sub>The same incident, two architectures (from the <a href="https://bernardosaab.github.io/graphloop/">live report</a>). <code>graph+memory</code> follows the evidence to <code>catalog-db</code>; a named engineer signs the critical write and the read-back confirms the fix. The <code>loop</code> agent is drawn to a recent deploy, spends about 6x the tokens, and its policy-signed rollback fails read-back.</sub>
+
 ## Results (100 simulated incidents, paired design)
 
 | Agent | Resolved (95% CI) | Precision | Wrong writes | Escalated | LLM calls | Tokens / incident | Cost / resolved |
@@ -118,6 +122,19 @@ uv run graphloop bench --llm ollama:qwen2.5:7b-instruct --scenarios 30 --out res
 GRAPHLOOP_OLLAMA=1 uv run pytest -m ollama  # live contract test
 ```
 
+**Or with Docker** (nothing to install but Docker):
+
+```bash
+docker build --target test .                      # runs the full test suite inside the image
+docker build -t graphloop .
+docker run --rm graphloop run --incident 3 --agent graph+memory
+docker compose run --rm graphloop bench --out results     # writes ./results
+```
+
+The image is multi-stage: the runtime is a slim, non-root layer containing only the locked
+environment. `compose.yaml` includes an opt-in Ollama service (`--profile ollama`) for real-model
+runs. CI builds and smoke-tests the image on every push.
+
 **Deploy.** Every push to `main` runs CI (`.github/workflows/ci.yml`). The Pages workflow
 (`.github/workflows/pages.yml`) re-runs the tests, regenerates the benchmark from the committed
 code and publishes the interactive report. Nothing else needs deploying: there are no servers and
@@ -150,6 +167,14 @@ src/graphloop/
   (salience-driven attention, limited context, slips) are documented and shared by both agents.
 * The benchmark reviewer signs everything it is shown, so results measure agents and gates,
   not reviewer skill.
+
+## Roadmap
+
+* **Measured run on a real open-weight model.** Run the benchmark through Ollama (for example
+  `qwen2.5:7b-instruct`) and publish the results next to the simulated ones, labelled as measured,
+  with the model and hardware named (see [ADR 0005](docs/adr/0005-simulated-llm-evaluation.md)).
+  The adapter, the opt-in contract test and the Compose service are already in place.
+* A persistent checkpointer (SQLite or Postgres) and a graph-database adapter for the CCG port.
 
 ## License
 
